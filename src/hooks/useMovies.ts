@@ -2,14 +2,17 @@ import {
   keepPreviousData,
   useInfiniteQuery,
   useMutation,
+  useQuery,
 } from "@tanstack/vue-query";
 import {
   AddMovie,
   deleteMovie,
   getAllMovies,
+  getLastFetchedDate,
+  syncMovies,
   UpdateMovie,
 } from "@/services/movies";
-import { filterType, responseGetAllMovies, ResponseType } from "@/types";
+import { filterType, LastFetchedDate, responseGetAllMovies, ResponseType } from "@/types";
 import { Ref } from "vue";
 import { useToastAndQueryClient } from "./toast-query-client";
 
@@ -24,6 +27,14 @@ export function useGetAllMovies(params: Ref<filterType>) {
         : undefined;
     },
     initialPageParam: params.value.page as number | undefined,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useGetLastFetchedDate() {
+  return useQuery<ResponseType<LastFetchedDate>, Error>({
+    queryKey: ["movies", "last-fetched-date"],
+    queryFn: () => getLastFetchedDate(),
     placeholderData: keepPreviousData,
   });
 }
@@ -52,6 +63,31 @@ export const useUpdateMovie = () => {
     },
   });
 };
+export const useSyncMovies = () => {
+  const { queryClient, toast } = useToastAndQueryClient();
+
+  return useMutation({
+    mutationFn: syncMovies,
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["movies"] });
+      return {};
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["movies"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      toast({
+        variant: "success",
+        title: "Success",
+        description: "Success Sync Movies",
+      });
+    },
+    onError: (error, context) => {
+      queryClient.setQueryData(["movies"], context);
+      console.error("Error adding item", error);
+    },
+  });
+};
+
 export const useAddMovie = () => {
   const { queryClient, toast } = useToastAndQueryClient();
 

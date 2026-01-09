@@ -30,6 +30,11 @@ export type chartDataType = {
     total? : number
 }
 
+
+export type LastFetchedDate = {
+    last_fetched_date: string
+
+}
 export type MovieType = {
     id: number;
     title: string;

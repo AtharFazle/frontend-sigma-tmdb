@@ -1,4 +1,4 @@
-import { DeleteResponse, filterType, responseGetAllMovies, ResponseType } from "@/types";
+import { DeleteResponse, filterType, LastFetchedDate, responseGetAllMovies, ResponseType } from "@/types";
 import axiosInstance from "@/lib/axiosInstance";
 import { AddMovieValues, UpdateMovieValues } from "@/constant/form";
 
@@ -7,6 +7,17 @@ export async function getAllMovies(
 ): Promise<ResponseType<responseGetAllMovies>> {
 
   const response = await axiosInstance.get("/movies", { params: params });
+  return response?.data;
+}
+
+export async function syncMovies(): Promise<ResponseType> {
+  const response = await axiosInstance.get("/movies/sync");
+  return response?.data;
+}
+
+
+export async function getLastFetchedDate(): Promise<ResponseType<LastFetchedDate>> {
+  const response = await axiosInstance.get("/movies/last-fetched-date");
   return response?.data;
 }
 

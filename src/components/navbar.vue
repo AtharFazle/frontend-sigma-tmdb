@@ -8,10 +8,10 @@ const link = [
     path: "/",
     icon: HomeIcon,
   },
-  {
-    name: "Preview",
-    path: "/preview",
-  },
+  // {
+  //   name: "Preview",
+  //   path: "/preview",
+  // },
 ];
 </script>
 

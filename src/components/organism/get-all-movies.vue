@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
 import { ref } from 'vue';
-import { useGetAllMovies } from '@/hooks/useMovies';
+import { useGetAllMovies} from '@/hooks/useMovies';
 import { filterType, MovieType } from '@/types';
 import { tableMovieHeader } from '@/constant/table';
 
@@ -28,7 +28,6 @@ import {
 } from '@/components/ui/card'
 
 
-// @ts-ignore
 import ActionTableMovies from './action-table-movies.vue';
 import Button from '../ui/button/Button.vue';
 import Update from './movie/update.vue';
