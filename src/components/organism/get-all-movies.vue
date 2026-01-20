@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
-import { ref } from 'vue';
-import { useGetAllMovies} from '@/hooks/useMovies';
+import { ref, useTemplateRef, nextTick } from 'vue';
+import { useGetAllMovies } from '@/hooks/useMovies';
 import { filterType, MovieType } from '@/types';
 import { tableMovieHeader } from '@/constant/table';
 
@@ -16,20 +16,18 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
+import { useInfiniteScroll } from '@vueuse/core'
 import { Icon } from "@iconify/vue";
 import Loading from '@/components/ui/loading/index.vue';
 import {
     Card,
     CardContent,
-    // CardDescription,
-    // CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card'
 
 
 import ActionTableMovies from './action-table-movies.vue';
-import Button from '../ui/button/Button.vue';
 import Update from './movie/update.vue';
 import { UpdateMovieValues } from '@/constant/form';
 import moment from 'moment';
@@ -37,6 +35,8 @@ import { useDebounceFn } from '@vueuse/core';
 import Delete from './movie/delete.vue';
 import Add from './movie/add.vue';
 
+
+const tableContainer = useTemplateRef('tableContainer')
 const filter = ref<filterType>(
     {
         search: undefined,
@@ -68,6 +68,29 @@ const debouncedFn = useDebounceFn((value) => {
     filter.value.search = value
 }, 1000)
 
+useInfiniteScroll(
+    () => tableContainer.value?.$el as HTMLElement,
+    async () => {
+        if (hasNextPage.value && !isFetching.value) {
+            const scrollElement = tableContainer.value?.$el as HTMLElement;
+            const previousScrollHeight = scrollElement?.scrollHeight || 0;
+
+            await fetchNextPage();
+
+            await nextTick();
+            if (scrollElement) {
+                const newScrollHeight = scrollElement.scrollHeight;
+                const scrollDiff = newScrollHeight - previousScrollHeight;
+                scrollElement.scrollTop += scrollDiff;
+            }
+        }
+    },
+    {
+        distance: 100,
+        canLoadMore: () => hasNextPage.value && !isFetching.value,
+    }
+)
+
 
 const handleAction = (type: string, movie: MovieType) => {
 
@@ -85,6 +108,8 @@ const handleAction = (type: string, movie: MovieType) => {
     }
     action.value.open = true
 }
+
+
 </script>
 
 <template>
@@ -98,18 +123,11 @@ const handleAction = (type: string, movie: MovieType) => {
                 <Input @update:model-value="debouncedFn" placeholder="Hellboy: The Crooked Man" />
             </div>
         </CardHeader>
-        <CardContent class="px-3">
+        <CardContent ref="tableContainer" class="px-3 max-h-[calc(100vh-200px)] overflow-y-auto">
             <Table>
-                <TableCaption>
-                    <Loading v-if="isLoading || isFetching" />
-                    <Button v-else-if="hasNextPage" @click="fetchNextPage()" class="cursor-pointer">Load More ?
-                    </Button>
-                    <div>{{ data?.pages[0].data?.meta.total_data == 0 ? 'No Data' : 'A List of Movies' }}</div>
-                </TableCaption>
-
-                <TableHeader>
+                <TableHeader class="sticky top-0 bg-background z-10">
                     <TableRow class="text-base">
-                        <TableHead v-for="item in tableMovieHeader " :key="item.key" class="text-center py-3">{{
+                        <TableHead v-for="item in tableMovieHeader" :key="item.key" class="text-center py-3">{{
                             item.title
                             }}
                         </TableHead>
@@ -136,7 +154,7 @@ const handleAction = (type: string, movie: MovieType) => {
                                 <p class="max-w-[200px] line-clamp-4 text-xs">{{ movie.overview }}</p>
                             </TableCell>
                             <TableCell>
-                                {{ movie.genres.map((item) => item.name).join(', ') }}
+                                {{movie.genres.map((item) => item.name).join(', ')}}
                             </TableCell>
 
                             <TableCell>
@@ -150,6 +168,12 @@ const handleAction = (type: string, movie: MovieType) => {
                         </TableRow>
                     </template>
                 </TableBody>
+                <TableCaption>
+                    <Loading v-if="isLoading || isFetching" />
+                    <div v-else-if="!hasNextPage">
+                        {{ data?.pages[0].data?.meta.total_data == 0 ? 'No Data' : 'All movies loaded' }}
+                    </div>
+                </TableCaption>
             </Table>
         </CardContent>
     </Card>
